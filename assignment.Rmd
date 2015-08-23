@@ -1,0 +1,85 @@
+---
+title: "Practical Machine Learning Assignment"
+output: html_document
+---
+
+# Summary
+
+A random tree model was trained using the provided data. The resultant model had an estimated out of sample error of <0.2%. When applied to the testset provided, the model was able to accurately identify all 20 activities listed.
+
+##Setting up environment and loading relevant data
+
+```{r message=FALSE}
+set.seed(11)
+library(caret)
+library(doParallel)
+registerDoParallel(cores=3)
+
+testset<-read.csv("pml-testing.csv",header=TRUE)
+trainset<-read.csv("pml-training.csv",header=TRUE)
+
+```
+
+##Pre-processing the data and segregation into training and test sets
+
+```{r}
+#Remove predictors that are not present in the final test set
+allna <- sapply(testset, function(x) mean(is.na(x))) ==1
+trainset <- trainset[, allna==F]
+testset <- testset[, allna==F]
+
+#Removing predictors with near zero variation
+nzvar <- nearZeroVar(trainset)
+trainset <- trainset[, -nzvar]
+testset <- testset[, -nzvar]
+
+#Removing predictors that have mostly NA values
+almost_NA <- sapply(trainset, function(x) mean(is.na(x))) > 0.95
+trainset <- trainset[, almost_NA==F]
+testset <- testset[, almost_NA==F]
+
+#Removing irrelevant predictors 
+trainset <- trainset[, -c(1,3,4,5)]
+testset <- testset[, -c(1,3,4,5)]
+
+#Partitioning into test and training sets
+inTrain<-createDataPartition(y=trainset$classe, p=0.7, list=FALSE)
+inTraining<-trainset[inTrain,]
+inTesting<-trainset[-inTrain,]
+
+
+```
+
+
+##Training and validating the model
+
+```{r cache=TRUE, message=FALSE}
+tcterm<-trainControl(method = "boot", number=5,allowParallel = TRUE)
+modFit<-train(classe~.,data=inTraining, method="rf",prox=TRUE, trControl = tcterm)
+modFit$finalModel
+
+predictval<-predict(modFit,newdata=inTesting)
+confusionMatrix(predictval,inTesting$classe)
+```
+
+Performance on the training set was satisfactory, with 99.77% of entries correctly classified.
+Cross validation results in an accuracy of 99.86%, suggesting that the out of sample error can be estimated less than 0.2%.
+
+##Re-training the model
+Now that the model has been validated, we can re-train it using the full set of data.
+
+```{r cache=TRUE, message=FALSE, cache.lazy=FALSE}
+#tcterm<-trainControl(method = "boot", number=5,allowParallel = TRUE)
+#finalFit<-train(classe~.,data=trainset, method="rf",prox=TRUE, trControl = tcterm)
+#finalFit$finalModel
+```
+
+*Not done due to errors on system
+
+##Applying the model to the test set
+Applying the model to the test set gives the results as below:
+```{r cache=TRUE}
+testval<-predict(modFit,newdata=testset)
+testval
+```
+
