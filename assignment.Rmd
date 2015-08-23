@@ -68,18 +68,17 @@ Cross validation results in an accuracy of 99.86%, suggesting that the out of sa
 ##Re-training the model
 Now that the model has been validated, we can re-train it using the full set of data.
 
-```{r cache=TRUE, message=FALSE, cache.lazy=FALSE}
-#tcterm<-trainControl(method = "boot", number=5,allowParallel = TRUE)
-#finalFit<-train(classe~.,data=trainset, method="rf",prox=TRUE, trControl = tcterm)
-#finalFit$finalModel
+```{r message=FALSE, cache.lazy=FALSE}
+finalFit<-train(classe~.,data=trainset, method="rf",prox=TRUE, trControl = tcterm)
+finalFit$finalModel
 ```
 
-*Not done due to errors on system
+
 
 ##Applying the model to the test set
 Applying the model to the test set gives the results as below:
 ```{r cache=TRUE}
-testval<-predict(modFit,newdata=testset)
+testval<-predict(finalFit,newdata=testset)
 testval
 ```
 
